@@ -22,6 +22,8 @@ class VoteSmart {
         protected $iface;          // Interface(URL) used to gain the data
         protected $xml;            // Raw XML
         protected $xmlObj;         // SimpleXML object
+        protected $json;           // Raw JSON
+        protected $jsonObj;        // stdClass object
         
         /**
          * function __construct
@@ -88,7 +90,7 @@ class VoteSmart {
          * 
          * @param string $method CandidateBio.getBio'
          * @param array $args Array('candidateId' => '54321')
-         * @return object SimpleXMLElement
+         * @return object VoteSmart
          */
         public function query($method, $args = Array()) {
                 
@@ -98,13 +100,32 @@ class VoteSmart {
 				
 			foreach($args as $n => $v) {
 				
-				$terms .= '&' . $n . '=' . $v;
+				$terms .= '&' . $n . '=' . urlencode($v);
 				 
 			}
 		}
 		
 		$this->iface = _APISERVER_ . "/" . $method . "?key=" . _KEY_ . "&o=" . _OUTPUT_  . $terms;
-		
+
+		if(_OUTPUT_ == 'JSON') {
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $this->iface);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			$data = curl_exec($ch);
+
+			if($data) {
+
+				$this->json = $data;
+				$this->jsonObj = json_decode($this->json);
+				return $this;
+
+			}
+
+			return false;
+
+		}
+
                 if (!$this->xml = file_get_contents($this->iface)) {
                 		
                         return false;
@@ -115,7 +136,7 @@ class VoteSmart {
                         // output into an object we can later interact with easilly
                         $this->xmlObj = new SimpleXMLElement($this->xml, LIBXML_NOCDATA);
                         
-                        return $this->xmlObj;
+                        return $this;
                 		
                 }
                 
